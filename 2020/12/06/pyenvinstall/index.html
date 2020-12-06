@@ -1,0 +1,331 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>pyenv 让 python 版本完美切换 | 微语记忆</title><meta name="keywords" content="web,https,wordpress"><meta name="author" content="yarmy"><meta name="copyright" content="yarmy"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><meta name="description" content="用pyenv 让 python 版本切换更优雅前言本文适用与 archlinux、debian&#x2F;ubuntu、centos、mac也可以参考，windows下推荐pipenv，后续会单独写一篇。 背景在ubuntu开发环境下写一些web项目，但是每个项目使用的python版本和库均不一致，python 版本比较多上，就必须有隔离环境。比如有的项目使用 python 3.5，可以借助 pyenv 帮">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pyenv 让 python 版本完美切换">
+<meta property="og:url" content="https://mlia.cn/2020/12/06/pyenvinstall/index.html">
+<meta property="og:site_name" content="微语记忆">
+<meta property="og:description" content="用pyenv 让 python 版本切换更优雅前言本文适用与 archlinux、debian&#x2F;ubuntu、centos、mac也可以参考，windows下推荐pipenv，后续会单独写一篇。 背景在ubuntu开发环境下写一些web项目，但是每个项目使用的python版本和库均不一致，python 版本比较多上，就必须有隔离环境。比如有的项目使用 python 3.5，可以借助 pyenv 帮">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://p.130014.xyz/2020/12/06/ce7225d455e85b49b7738ab82b92a90.jpg">
+<meta property="article:published_time" content="2020-12-06T14:50:00.000Z">
+<meta property="article:modified_time" content="2020-12-06T15:32:35.753Z">
+<meta property="article:author" content="yarmy">
+<meta property="article:tag" content="web">
+<meta property="article:tag" content="https">
+<meta property="article:tag" content="wordpress">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://p.130014.xyz/2020/12/06/ce7225d455e85b49b7738ab82b92a90.jpg"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://mlia.cn/2020/12/06/pyenvinstall/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//hm.baidu.com"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><script>var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?17983fa81d6e36689bd4d34ed46dcf48";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    jQuery: 'https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js',
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+    },
+    fancybox: {
+      js: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isanchor: false
+};
+
+var saveToLocal = {
+  set: function setWithExpiry(key, value, ttl) {
+    const now = new Date()
+    const expiryDay = ttl * 86400000
+    const item = {
+      value: value,
+      expiry: now.getTime() + expiryDay,
+    }
+    localStorage.setItem(key, JSON.stringify(item))
+  },
+
+  get: function getWithExpiry(key) {
+    const itemStr = localStorage.getItem(key)
+
+    if (!itemStr) {
+      return undefined
+    }
+    const item = JSON.parse(itemStr)
+    const now = new Date()
+
+    if (now.getTime() > item.expiry) {
+      localStorage.removeItem(key)
+      return undefined
+    }
+    return item.value
+  }
+}
+
+// https://stackoverflow.com/questions/16839698/jquery-getscript-alternative-in-native-javascript
+const getScript = url => new Promise((resolve, reject) => {
+  const script = document.createElement('script')
+  script.src = url
+  script.async = true
+  script.onerror = reject
+  script.onload = script.onreadystatechange = function() {
+    const loadState = this.readyState
+    if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+    script.onload = script.onreadystatechange = null
+    resolve()
+  }
+  document.head.appendChild(script)
+})</script><script id="config_change">var GLOBAL_CONFIG_SITE = { 
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2020-12-06 23:32:35'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(function () {  window.activateDarkMode = function () {
+    document.documentElement.setAttribute('data-theme', 'dark')
+    if (document.querySelector('meta[name="theme-color"]') !== null) {
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+    }
+  }
+  window.activateLightMode = function () {
+    document.documentElement.setAttribute('data-theme', 'light')
+   if (document.querySelector('meta[name="theme-color"]') !== null) {
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+    }
+  }
+  const autoChangeMode = 'false'
+  const t = saveToLocal.get('theme')
+  if (autoChangeMode === '1') {
+    const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+    const isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+    const hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+    if (t === undefined) {
+      if (isLightMode) activateLightMode()
+      else if (isDarkMode) activateDarkMode()
+      else if (isNotSpecified || hasNoSupport) {
+        const now = new Date()
+        const hour = now.getHours()
+        const isNight = hour <= 6 || hour >= 18
+        isNight ? activateDarkMode() : activateLightMode()
+      }
+      window.matchMedia('(prefers-color-scheme: dark)').addListener(function (e) {
+        if (saveToLocal.get('theme') === undefined) {
+          e.matches ? activateDarkMode() : activateLightMode()
+        }
+      })
+    } else if (t === 'light') activateLightMode()
+    else activateDarkMode()
+  } else if (autoChangeMode === '2') {
+    const now = new Date()
+    const hour = now.getHours()
+    const isNight = hour <= 6 || hour >= 18
+    if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+    else if (t === 'light') activateLightMode()
+    else activateDarkMode()
+  } else {
+    if (t === 'dark') activateDarkMode()
+    else if (t === 'light') activateLightMode()
+  }const asideStatus = saveToLocal.get('aside-status')
+if (asideStatus !== undefined) {
+   if (asideStatus === 'hide') {
+     document.documentElement.classList.add('hide-aside')
+   } else {
+     document.documentElement.classList.remove('hide-aside')
+   }
+}})()</script><meta name="generator" content="Hexo 5.2.0"></head><body><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="author-avatar"><img class="avatar-img" src="/img/logo1.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data"><div class="data-item is-center"><div class="data-item-link"><a href="/archives/"><div class="headline">文章</div><div class="length-num">3</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://p.130014.xyz/2020/12/06/ce7225d455e85b49b7738ab82b92a90.jpg)"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">微语记忆</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">pyenv 让 python 版本完美切换</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2020-12-06T14:50:00.000Z" title="发表于 2020-12-06 22:50:00">2020-12-06</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2020-12-06T15:32:35.753Z" title="更新于 2020-12-06 23:32:35">2020-12-06</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/web/">web</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h3 id="用pyenv-让-python-版本切换更优雅"><a href="#用pyenv-让-python-版本切换更优雅" class="headerlink" title="用pyenv 让 python 版本切换更优雅"></a>用pyenv 让 python 版本切换更优雅</h3><h5 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h5><p>本文适用与 archlinux、debian/ubuntu、centos、mac也可以参考，windows下推荐pipenv，后续会单独写一篇。</p>
+<h5 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h5><p>在ubuntu开发环境下写一些web项目，但是每个项目使用的python版本和库均不一致，python 版本比较多上，就必须有隔离环境。比如有的项目使用 python 3.5，可以借助 pyenv 帮助我们完美的隔离环境，让多个版本的 python 没有任何冲突，完美共存，此处是个人在搭建环境时查找资料最终完成后记录。</p>
+<h5 id="任务"><a href="#任务" class="headerlink" title="任务"></a>任务</h5><p>使用 pyenv 和 pyenv-virtualenv（pyenv插件） ，在 linux 下优化的管理多个 python 环境</p>
+<h5 id="一、使用环境"><a href="#一、使用环境" class="headerlink" title="一、使用环境"></a>一、使用环境</h5><ol>
+<li>操作系统：archlinux</li>
+<li>shell：zsh</li>
+</ol>
+<p>请注意，接下来所有的操作都在 archlinux下进行，本文不涉及 windows</p>
+<h5 id="清单"><a href="#清单" class="headerlink" title="清单"></a>清单</h5><ol>
+<li>git</li>
+<li>zsh 或者 bash</li>
+<li>pyenv</li>
+<li>pyenv-virtualenv</li>
+</ol>
+<h6 id="1、安装-git"><a href="#1、安装-git" class="headerlink" title="1、安装 git"></a>1、安装 git</h6><p>在各大 linux 的发行版下安装 git 都非常简单，此处只展示部分示例</p>
+<ul>
+<li>archlinux<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo pacman -S git</span><br></pre></td></tr></table></figure></li>
+<li>debian/ubuntu<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install git</span><br></pre></td></tr></table></figure></li>
+<li>centos<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum install git</span><br></pre></td></tr></table></figure>
+<h6 id="2、开启终端"><a href="#2、开启终端" class="headerlink" title="2、开启终端"></a>2、开启终端</h6>本文使用 zsh</li>
+</ul>
+<h6 id="3、安装-pyenv"><a href="#3、安装-pyenv" class="headerlink" title="3、安装 pyenv"></a>3、安装 pyenv</h6><p>说明：本文的所有安装都严格遵守官方文档，与官方文档完全保持一致。</p>
+<p>git 地址：<a target="_blank" rel="noopener" href="https://github.com/pyenv/pyenv">https://github.com/pyenv/pyenv</a></p>
+<p>在你的终端中执行如下命令，安全无毒，请放心食用：</p>
+<p>首先把项目克隆下来，放在家目录下的隐藏文件夹中：.pyenv</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/pyenv/pyenv.git ~/.pyenv</span><br></pre></td></tr></table></figure>
+<p>然后配置环境变量</p>
+<p>如果你使用 bash，就依次执行如下命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">echo &#x27;export PYENV_ROOT=&quot;$HOME/.pyenv&quot;&#x27; &gt;&gt; ~/.bashrc</span><br><span class="line">echo &#x27;export PATH=&quot;$PYENV_ROOT/bin:$PATH&quot;&#x27; &gt;&gt; ~/.bashrc</span><br><span class="line">echo -e &#x27;if command -v pyenv 1&gt;/dev/null 2&gt;&amp;1; then\n eval &quot;$(pyenv init -)&quot;\nfi&#x27; &gt;&gt; ~/.bashrc</span><br></pre></td></tr></table></figure>
+
+<p>如果你使用 zsh，就依次执行如下命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">echo &#x27;export PYENV_ROOT=&quot;$HOME/.pyenv&quot;&#x27; &gt;&gt; ~/.zshrc</span><br><span class="line">echo &#x27;export PATH=&quot;$PYENV_ROOT/bin:$PATH&quot;&#x27; &gt;&gt; ~/.zshrc</span><br><span class="line">echo -e &#x27;if command -v pyenv 1&gt;/dev/null 2&gt;&amp;1; then\n eval &quot;$(pyenv init -)&quot;\nfi&#x27; &gt;&gt; ~/.zshrc</span><br></pre></td></tr></table></figure>
+<p>echo 命令的含义是：将引号中内容写入某文件中<br>请注意，以上的三条 echo 命令的最后一条长长的命令，请你保证它引号中的内容处于 ~/.bashrc 或者 ~/.zshrc 的最底部。<br>因为在 pyenv 初始化期间会操作 path 环境变量，导致不可预测的行为。<br>查看文件的底部内容，可以使用 tail 命令，用法：tail ~/.bashrc 或者 tail ~/.zshrc，编辑文件可以使用 vim 或者 vscode</p>
+<p>最后，在使用 pyenv 之前，重新初始化 shell 环境，执行如下命令</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exec $SHELL</span><br></pre></td></tr></table></figure>
+<p>不执行该命令也是完全可以的，你可以关闭当前的终端窗口，重新启动一个就可以了。</p>
+<p>此时，你已经完成了 pyenv 的安装了，你使用可以它的全部命令了，但是我建议你先别急着用，一口气装完 pyenv 的一个插件，那就是 pyenv-virtualenv</p>
+<h6 id="4、安装-pyenv-virtualenv"><a href="#4、安装-pyenv-virtualenv" class="headerlink" title="4、安装 pyenv-virtualenv"></a>4、安装 pyenv-virtualenv</h6><p>git 地址：<a target="_blank" rel="noopener" href="https://github.com/pyenv/pyenv-virtualenv">https://github.com/pyenv/pyenv-virtualenv</a></p>
+<p>把插件克隆在刚才已经安装完毕的 pyenv 的 plugins 文件夹中</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone https:&#x2F;&#x2F;github.com&#x2F;pyenv&#x2F;pyenv-virtualenv.git $(pyenv root)&#x2F;plugins&#x2F;pyenv-virtualenv</span><br></pre></td></tr></table></figure>
+<p>然后配置环境变量</p>
+<p>如果你使用 bash，就执行如下命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">echo &#39;eval &quot;$(pyenv virtualenv-init -)&quot;&#39; &gt;&gt; ~&#x2F;.bashrc</span><br></pre></td></tr></table></figure>
+<p>如果你使用 zsh，就执行如下命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">echo &#39;eval &quot;$(pyenv virtualenv-init -)&quot;&#39; &gt;&gt; ~&#x2F;.zshrc</span><br></pre></td></tr></table></figure>
+<p>最后，在使用 pyenv 之前，重新初始化 shell 环境，执行如下命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exec $SHELL</span><br></pre></td></tr></table></figure>
+<p>不执行该命令也是完全可以的，你可以关闭当前的终端窗口，重新启动一个就可以了。</p>
+<p>到此，我们的所有重要安装已经全部完成了，可以开始体验了。</p>
+<h5 id="二、使用-pyenv"><a href="#二、使用-pyenv" class="headerlink" title="二、使用 pyenv"></a>二、使用 pyenv</h5><p>此处仅仅展示 pyenv 和 virtualenv 的日常用法</p>
+<p>检查安装是否正确<br>检查 pyenv 的版本</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pyenv version</span><br></pre></td></tr></table></figure>
+<p>查看 pyenv 已经托管了哪些 python 版本</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pyenv versions</span><br></pre></td></tr></table></figure>
+<p>如果你看到了正常的版本信息，就说明可以了，如果看到了类似于 command not found 之类的，就说明安装失败了。</p>
+<p>安装 3.6.6 版本的 python</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pyenv install 3.6.6</span><br></pre></td></tr></table></figure>
+<p>这里有个问题，某些情况下会安装失败，报错就告诉你 Build failed</p>
+<p>这个时候，pyenv 已经在它的 github wiki 里面为我们准备了一篇错误应对方案，原文地址 <a target="_blank" rel="noopener" href="https://github.com/pyenv/pyenv/wiki">https://github.com/pyenv/pyenv/wiki</a></p>
+<p>大意如下，只需要执行对应的命令即可：</p>
+<ul>
+<li>archlinux 用户<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo pacman -S base-devel openssl zlib</span><br></pre></td></tr></table></figure></li>
+<li>mac 用户<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install openssl readline sqlite3 xz zlib</span><br></pre></td></tr></table></figure></li>
+<li>Ubuntu/Debian/Mint 用户<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev</span><br></pre></td></tr></table></figure></li>
+<li>CentOS/Fedora &lt;= 21 用户，请你保证已经安装了 xz 工具<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum install gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel tk-devel libffi-devel</span><br></pre></td></tr></table></figure></li>
+<li>Fedora &gt;= 22 用户，请你保证已经安装了 xz 工具<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo dnf install -y gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel tk-devel</span><br></pre></td></tr></table></figure></li>
+<li>openSUSE 用户<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zypper install gcc automake openssl-devel ncurses-devel readline-devel zlib-devel tk-devel</span><br></pre></td></tr></table></figure></li>
+<li>Solus 用户<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo eopkg it -c system.devel</span><br><span class="line">sudo eopkg install git gcc make zlib-devel bzip2-devel readline-devel sqlite3-devel openssl-devel tk-devel</span><br></pre></td></tr></table></figure></li>
+<li>Linuxbrew 用户<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install bzip2 openssl readline sqlite xz</span><br></pre></td></tr></table></figure>
+安装完这些补充的工具之后，再次执行：<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pyenv install 3.6.6</span><br></pre></td></tr></table></figure>
+就可以成功了，你可以不断的使用<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pyenv versions</span><br></pre></td></tr></table></figure>
+来查看被 pyenv 托管的 python 版本</li>
+</ul>
+<p>而且你想装什么版本就装什么版本，想装几个装几个，都是完美共存，完美隔离，你可以在终端里输入</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pyenv install</span><br></pre></td></tr></table></figure>
+<p>然后按下 tab 键，就可以看到所有可选的安装版本了</p>
+<p>使用刚才安装的 python 3.6.6<br>首先我们需要明确一个概念，pyenv 和 pyenv-virtualenv 他们是如何协作的，你可以这么认为：</p>
+<p>pyenv 托管 python 版本，virtualenv 使用 python 版本</p>
+<p>好了，之前已经装好了版本，那么现在就来使用吧</p>
+<h6 id="第-1-步：创建虚拟环境"><a href="#第-1-步：创建虚拟环境" class="headerlink" title="第 1 步：创建虚拟环境"></a>第 1 步：创建虚拟环境</h6><p>首先需要创建一个虚拟环境，执行命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pyenv virtualenv 3.6.6 my-env</span><br></pre></td></tr></table></figure>
+<p>它的格式就是这样固定的，最后一个是你自己想要的环境的名字，可以随便取。稍等片刻，你将会看到：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Looking in links: /tmp/tmp0eywgc7v</span><br><span class="line">Requirement already satisfied: setuptools in /home/joit/.pyenv/versions/3.6.6/envs/my-env/lib/python3.6/site-packages (39.0.1)</span><br><span class="line">Requirement already satisfied: pip in /home/joit/.pyenv/versions/3.6.6/envs/my-env/lib/python3.6/site-packages (10.0.1)</span><br></pre></td></tr></table></figure>
+<p>类似于这样的回显信息，说明环境已经创建成功了，它还告诉了你，该虚拟环境的绝对路径，如果你进去看了，你就会发现，所谓的虚拟环境，就是把 python 装在 pyenv 的安装目录的某个文件夹中，以供它自己调用。</p>
+<h6 id="第-2-步：激活虚拟环境"><a href="#第-2-步：激活虚拟环境" class="headerlink" title="第 2 步：激活虚拟环境"></a>第 2 步：激活虚拟环境</h6><p>在任意目录下，执行命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pyenv activate my-env</span><br></pre></td></tr></table></figure>
+<p>你会发现，在你的终端里面，多了一个类似于 (my-env) 这样的一个东西，这时候你如果执行：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python --version</span><br></pre></td></tr></table></figure>
+<p>那就是 python 3.6.6 了</p>
+<p>如果你执行：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip --version</span><br></pre></td></tr></table></figure>
+<p>它会告诉你 pip 包安装的绝对路径，也是 pyenv 安装目录下的某个文件夹</p>
+<p>如果你关掉了终端，那么下次启动你又得重新激活一次了，你可以使用如下命令：</p>
+<p>首先 cd 到某一个目录，比如 ~/test</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cd ~/test</span><br></pre></td></tr></table></figure>
+<p>然后在该目录下执行：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pyenv local my-env</span><br></pre></td></tr></table></figure>
+<p>你会发现已经被激活了，那么 local 命令和刚才有啥不同呢。如果你执行：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls -al</span><br></pre></td></tr></table></figure>
+<p>你就会发现，在 ~/test 目录下，有个隐藏文件 .python-version，你可以看到这个文件里面，只写了一句话 my-env</p>
+<p>这样你只要进入 ~/test 目录，就会自动激活虚拟环境</p>
+<p>在虚拟环境下，你如果直接执行</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python</span><br></pre></td></tr></table></figure>
+<p>就会进入到 python 的交互环境</p>
+<p>如果你写了一个文件，名字叫做 app.py ，里面的内容只有一句代码：print(1)</p>
+<p>然后执行：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python app.py</span><br></pre></td></tr></table></figure>
+<p>这时候，系统就会调用虚拟环境中的 python 解释器来执行这些代码了</p>
+<h5 id="三、更新-pyenv"><a href="#三、更新-pyenv" class="headerlink" title="三、更新 pyenv"></a>三、更新 pyenv</h5><p>由于我们是 git 克隆的，所以更新非常简单</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd ~/.pyenv 或者 cd $(pyenv root)</span><br><span class="line">git pull</span><br></pre></td></tr></table></figure>
+<h5 id="四、卸载-pyenv"><a href="#四、卸载-pyenv" class="headerlink" title="四、卸载 pyenv"></a>四、卸载 pyenv</h5><p>由于 pyenv 把一切都放在 ~/.pyenv 下了，所以卸载很方便，两个步骤就行了</p>
+<p>首先你需要删除环境变量</p>
+<p>然后你需要执行：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rm -rf ~/.pyenv 或者 rm -rf $(pyenv root)</span><br></pre></td></tr></table></figure></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:undefined">yarmy</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://mlia.cn/2020/12/06/pyenvinstall/">https://mlia.cn/2020/12/06/pyenvinstall/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://mlia.cn" target="_blank">微语记忆</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/web/">web</a><a class="post-meta__tags" href="/tags/https/">https</a><a class="post-meta__tags" href="/tags/wordpress/">wordpress</a></div><div class="post_share"><div class="social-share" data-image="https://p.130014.xyz/2020/12/06/ce7225d455e85b49b7738ab82b92a90.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2020/09/16/bcrypttest/"><img class="next-cover" src="https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Python：bcrypt对密码进行加密和校验</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span> 相关推荐</span></div><div class="relatedPosts-list"><div><a href="/2018/06/07/sslwordpress/" title="wordpress开启全站https访问"><img class="cover" src="https://p.130014.xyz/2020/12/06/ce7225d455e85b49b7738ab82b92a90.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2018-06-07</div><div class="title">wordpress开启全站https访问</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="twikoo-wrap"></div></div></div></div></div><div class="aside_content" id="aside_content"><div class="card-widget card-info"><div class="card-content"><div class="card-info-avatar is-center"><img class="avatar-img" src="/img/logo1.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-info__name">yarmy</div><div class="author-info__description">微言,微语</div></div><div class="card-info-data"><div class="card-info-data-item is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">3</div></a></div><div class="card-info-data-item is-center"><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a></div><div class="card-info-data-item is-center"><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div></div><a class="button--animated" id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a></div></div><div class="card-widget card-announcement"><div class="card-content"><div class="item-headline"><i class="fas fa-bullhorn card-announcement-animation"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="card-content"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%94%A8pyenv-%E8%AE%A9-python-%E7%89%88%E6%9C%AC%E5%88%87%E6%8D%A2%E6%9B%B4%E4%BC%98%E9%9B%85"><span class="toc-number">1.</span> <span class="toc-text">用pyenv 让 python 版本切换更优雅</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.0.1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.0.2.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%BB%BB%E5%8A%A1"><span class="toc-number">1.0.3.</span> <span class="toc-text">任务</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E4%BD%BF%E7%94%A8%E7%8E%AF%E5%A2%83"><span class="toc-number">1.0.4.</span> <span class="toc-text">一、使用环境</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%B8%85%E5%8D%95"><span class="toc-number">1.0.5.</span> <span class="toc-text">清单</span></a><ol class="toc-child"><li class="toc-item toc-level-6"><a class="toc-link" href="#1%E3%80%81%E5%AE%89%E8%A3%85-git"><span class="toc-number">1.0.5.1.</span> <span class="toc-text">1、安装 git</span></a></li><li class="toc-item toc-level-6"><a class="toc-link" href="#2%E3%80%81%E5%BC%80%E5%90%AF%E7%BB%88%E7%AB%AF"><span class="toc-number">1.0.5.2.</span> <span class="toc-text">2、开启终端</span></a></li><li class="toc-item toc-level-6"><a class="toc-link" href="#3%E3%80%81%E5%AE%89%E8%A3%85-pyenv"><span class="toc-number">1.0.5.3.</span> <span class="toc-text">3、安装 pyenv</span></a></li><li class="toc-item toc-level-6"><a class="toc-link" href="#4%E3%80%81%E5%AE%89%E8%A3%85-pyenv-virtualenv"><span class="toc-number">1.0.5.4.</span> <span class="toc-text">4、安装 pyenv-virtualenv</span></a></li></ol></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E4%BD%BF%E7%94%A8-pyenv"><span class="toc-number">1.0.6.</span> <span class="toc-text">二、使用 pyenv</span></a><ol class="toc-child"><li class="toc-item toc-level-6"><a class="toc-link" href="#%E7%AC%AC-1-%E6%AD%A5%EF%BC%9A%E5%88%9B%E5%BB%BA%E8%99%9A%E6%8B%9F%E7%8E%AF%E5%A2%83"><span class="toc-number">1.0.6.1.</span> <span class="toc-text">第 1 步：创建虚拟环境</span></a></li><li class="toc-item toc-level-6"><a class="toc-link" href="#%E7%AC%AC-2-%E6%AD%A5%EF%BC%9A%E6%BF%80%E6%B4%BB%E8%99%9A%E6%8B%9F%E7%8E%AF%E5%A2%83"><span class="toc-number">1.0.6.2.</span> <span class="toc-text">第 2 步：激活虚拟环境</span></a></li></ol></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E6%9B%B4%E6%96%B0-pyenv"><span class="toc-number">1.0.7.</span> <span class="toc-text">三、更新 pyenv</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E5%8D%B8%E8%BD%BD-pyenv"><span class="toc-number">1.0.8.</span> <span class="toc-text">四、卸载 pyenv</span></a></li></ol></li></ol></li></ol></div></div></div><div class="card-widget card-recent-post"><div class="card-content"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2020/12/06/pyenvinstall/" title="pyenv 让 python 版本完美切换"><img src="https://p.130014.xyz/2020/12/06/ce7225d455e85b49b7738ab82b92a90.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="pyenv 让 python 版本完美切换"/></a><div class="content"><a class="title" href="/2020/12/06/pyenvinstall/" title="pyenv 让 python 版本完美切换">pyenv 让 python 版本完美切换</a><time datetime="2020-12-06T14:50:00.000Z" title="发表于 2020-12-06 22:50:00">2020-12-06</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2020/09/16/bcrypttest/" title="Python：bcrypt对密码进行加密和校验"><img src="https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Python：bcrypt对密码进行加密和校验"/></a><div class="content"><a class="title" href="/2020/09/16/bcrypttest/" title="Python：bcrypt对密码进行加密和校验">Python：bcrypt对密码进行加密和校验</a><time datetime="2020-09-16T10:29:00.000Z" title="发表于 2020-09-16 18:29:00">2020-09-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2018/06/07/sslwordpress/" title="wordpress开启全站https访问"><img src="https://p.130014.xyz/2020/12/06/ce7225d455e85b49b7738ab82b92a90.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="wordpress开启全站https访问"/></a><div class="content"><a class="title" href="/2018/06/07/sslwordpress/" title="wordpress开启全站https访问">wordpress开启全站https访问</a><time datetime="2018-06-07T13:06:00.000Z" title="发表于 2018-06-07 21:06:00">2018-06-07</time></div></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 By yarmy</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="icp"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/"><img class="icp-icon" src="/img/icp.png" alt="ICP"/><span>皖ICP备12020653-2</span></a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script>(()=>{
+  const $countDom = document.getElementById('twikoo-count')
+  const init = () => {
+    twikoo.init({
+      envId: 'mlia-twikoo-6gfbmzq6638f0a42',
+      el: '#twikoo-wrap'
+    })
+  }
+
+  const getCount = () => {
+    twikoo.getCommentsCount({
+      envId: 'mlia-twikoo-6gfbmzq6638f0a42',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(function (res) {
+      $countDom.innerText = res[0].count
+    }).catch(function (err) {
+      console.error(err);
+    });
+  }
+
+  const loadTwikoo = (bool = false) => {
+    if (typeof twikoo === 'object') {
+      init()
+      bool && $countDom && setTimeout(()=>{getCount()},0)
+    } else {
+      getScript('https://cdn.jsdelivr.net/npm/twikoo/dist/twikoo.all.min.js').then(()=> {
+        init()
+        bool && $countDom && setTimeout(()=>{getCount()},0)
+      })
+    }
+  }
+
+  if ('Twikoo' === 'Twikoo' || !false) {
+    if (false) btf.loadComment(document.getElementById('twikoo'), loadTwikoo)
+    else loadTwikoo(true)
+  } else {
+    window.loadOtherComment = () => {
+      loadTwikoo()
+    }
+  }
+})()</script><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></div></body></html>
